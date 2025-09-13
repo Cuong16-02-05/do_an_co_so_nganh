@@ -15,12 +15,20 @@ async function crawlOnce() {
     if (!dacBiet) dacBiet = '000000';
     if (!nhat) nhat = '111111';
 
-    await db.query(
-      'INSERT INTO draws (date, giai_dac_biet, giai_nhat) VALUES (CURDATE(), ?, ?)',
-      [dacBiet, nhat]
-    );
+    // === kiểm tra nếu hôm nay đã có kết quả thì không lưu nữa ===
+    const today = new Date().toISOString().split('T')[0]; // yyyy-mm-dd
+    const [rows] = await db.query('SELECT * FROM draws WHERE date = ?', [today]);
 
-    console.log('✅ Đã lưu kết quả:', dacBiet, nhat);
+    if (rows.length === 0) {
+      await db.query(
+        'INSERT INTO draws (date, giai_dac_biet, giai_nhat) VALUES (?, ?, ?)',
+        [today, dacBiet, nhat]
+      );
+      console.log('✅ Đã lưu kết quả:', dacBiet, nhat);
+    } else {
+      console.log('⏩ Hôm nay đã có kết quả, bỏ qua insert');
+    }
+
   } catch (err) {
     console.error('❌ Lỗi crawl:', err.message);
   }
